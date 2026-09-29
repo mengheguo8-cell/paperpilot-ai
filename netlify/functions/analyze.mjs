@@ -14,7 +14,9 @@ export default async (request) => {
 
     if (!question || !question.trim()) {
       return new Response(
-        JSON.stringify({ error: "Please enter a research question." }),
+        JSON.stringify({
+          error: "Please enter a research question."
+        }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" }
@@ -22,124 +24,130 @@ export default async (request) => {
       );
     }
 
-   const apiKey = process.env.OPENAI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is not configured.");
+      throw new Error("GEMINI_API_KEY is not configured.");
     }
 
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/responses",
+    const prompt = `
+You are PaperPilot, an AI research copilot for scientific researchers.
+
+Analyze the following research question:
+
+"${question}"
+
+Requirements:
+1. Give a concise graduate-level scientific synthesis.
+2. Generate exactly three evidence points.
+3. Clearly separate established scientific knowledge from interpretation.
+4. Do NOT invent paper titles, authors, journals, DOIs, citations, or experimental data.
+5. Because no source papers have been uploaded yet, make clear that these are conceptual evidence points, not verified literature citations.
+6. Mention important uncertainty or limitations.
+`;
+
+    const geminiResponse = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
         },
-
         body: JSON.stringify({
-          model: "gpt-5-mini",
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
 
-          instructions: `
-You are PaperPilot, an AI research copilot.
+          generationConfig: {
+            responseMimeType: "application/json",
 
-Your job is to help researchers understand scientific questions.
+            responseSchema: {
+              type: "OBJECT",
 
-Rules:
-1. Give a concise scientific synthesis.
-2. Separate established evidence from interpretation.
-3. Do not invent paper titles, citations, authors, DOIs, or experimental results.
-4. If no source documents were supplied, explicitly say that the evidence items are conceptual synthesis rather than verified paper citations.
-5. Identify uncertainty and limitations when relevant.
-6. Generate exactly three evidence points.
-7. Keep the response useful for graduate-level scientific research.
-          `,
+              properties: {
+                summary: {
+                  type: "STRING"
+                },
 
-          input: question,
+                evidence: {
+                  type: "ARRAY",
 
-          text: {
-            format: {
-              type: "json_schema",
-              name: "paperpilot_analysis",
-              strict: true,
+                  items: {
+                    type: "OBJECT",
 
-              schema: {
-                type: "object",
-                properties: {
-                  summary: {
-                    type: "string"
-                  },
-
-                  evidence: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: {
-                          type: "string"
-                        },
-                        explanation: {
-                          type: "string"
-                        },
-                        source_status: {
-                          type: "string"
-                        }
+                    properties: {
+                      title: {
+                        type: "STRING"
                       },
 
-                      required: [
-                        "title",
-                        "explanation",
-                        "source_status"
-                      ],
+                      explanation: {
+                        type: "STRING"
+                      },
 
-                      additionalProperties: false
-                    }
-                  },
+                      source_status: {
+                        type: "STRING"
+                      }
+                    },
 
-                  limitations: {
-                    type: "string"
+                    required: [
+                      "title",
+                      "explanation",
+                      "source_status"
+                    ]
                   }
                 },
 
-                required: [
-                  "summary",
-                  "evidence",
-                  "limitations"
-                ],
+                limitations: {
+                  type: "STRING"
+                }
+              },
 
-                additionalProperties: false
-              }
+              required: [
+                "summary",
+                "evidence",
+                "limitations"
+              ]
             }
           }
         })
       }
     );
 
-    const data = await openaiResponse.json();
+    const data = await geminiResponse.json();
 
-    if (!openaiResponse.ok) {
-      console.error("OpenAI API error:", data);
+    if (!geminiResponse.ok) {
+      console.error("Gemini API error:", data);
 
       return new Response(
         JSON.stringify({
           error:
             data?.error?.message ||
-            "OpenAI API request failed."
+            "Gemini API request failed."
         }),
         {
-          status: openaiResponse.status,
-          headers: { "Content-Type": "application/json" }
+          status: geminiResponse.status,
+          headers: {
+            "Content-Type": "application/json"
+          }
         }
       );
     }
 
-    const outputText = data.output
-      ?.flatMap(item => item.content || [])
-      ?.find(content => content.type === "output_text")
-      ?.text;
+    const outputText =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!outputText) {
-      throw new Error("The AI response contained no text output.");
+      throw new Error(
+        "Gemini returned no text output."
+      );
     }
 
     const analysis = JSON.parse(outputText);
@@ -155,11 +163,15 @@ Rules:
     );
 
   } catch (error) {
-    console.error("PaperPilot function error:", error);
+    console.error(
+      "PaperPilot function error:",
+      error
+    );
 
     return new Response(
       JSON.stringify({
-        error: "PaperPilot could not complete the analysis.",
+        error:
+          "PaperPilot could not complete the analysis.",
         details: error.message
       }),
       {
