@@ -313,22 +313,49 @@ button:hover {
 </div>
 
 <script>
-function analyze() {
-
+async function analyze() {
   const question = document.getElementById("question").value;
   const result = document.getElementById("result");
+  const answer = document.getElementById("answer");
 
-  if(question.trim() === "") {
+  if (question.trim() === "") {
     alert("Please enter a research question.");
     return;
   }
 
   result.style.display = "block";
+  answer.textContent = "PaperPilot is analyzing your research question...";
 
   result.scrollIntoView({
     behavior: "smooth",
     block: "center"
   });
+
+  try {
+    const response = await fetch("/.netlify/functions/analyze", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        question: question
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || data.details || "Analysis failed.");
+    }
+
+    answer.textContent = data.summary;
+
+  } catch (error) {
+    console.error(error);
+
+    answer.textContent =
+      "PaperPilot could not complete the analysis. Please try again.";
+  }
 }
 </script>
 
