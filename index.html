@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PaperPilot — AI Research Copilot</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  background: #f6f8fc;
+  color: #172033;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 230px;
+  background: #101828;
+  color: white;
+  padding: 28px 18px;
+  position: fixed;
+  height: 100vh;
+}
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.logo span {
+  color: #8ea8ff;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #98a2b3;
+  margin-bottom: 38px;
+}
+
+.nav-item {
+  padding: 12px 14px;
+  border-radius: 9px;
+  margin-bottom: 8px;
+  color: #d0d5dd;
+  cursor: pointer;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background: #344054;
+  color: white;
+}
+
+/* Main */
+.main {
+  margin-left: 230px;
+  padding: 45px;
+  width: calc(100% - 230px);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  background: #e8edff;
+  color: #4057c8;
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+h1 {
+  margin-top: 42px;
+  font-size: 36px;
+}
+
+.hero-text {
+  margin-top: 10px;
+  color: #667085;
+  max-width: 650px;
+  line-height: 1.6;
+}
+
+/* Search */
+.ask-box {
+  margin-top: 30px;
+  background: white;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 3px 18px rgba(0,0,0,.06);
+  display: flex;
+  gap: 12px;
+}
+
+.ask-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  padding: 10px;
+}
+
+button {
+  background: #4057c8;
+  color: white;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  opacity: .9;
+}
+
+/* Content */
+.section-title {
+  margin-top: 38px;
+  margin-bottom: 16px;
+  font-size: 18px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  border: 1px solid #eaecf0;
+}
+
+.card-label {
+  font-size: 11px;
+  color: #4057c8;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.card h3 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #667085;
+}
+
+.source {
+  margin-top: 16px;
+  font-size: 12px;
+  color: #98a2b3;
+}
+
+/* AI result */
+.result {
+  display: none;
+  margin-top: 28px;
+  background: white;
+  border-radius: 14px;
+  padding: 24px;
+  border-left: 4px solid #4057c8;
+}
+
+.result h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.result p {
+  line-height: 1.7;
+  color: #475467;
+}
+
+.evidence-tag {
+  display: inline-block;
+  margin-top: 15px;
+  background: #ecfdf3;
+  color: #027a48;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.footer {
+  margin-top: 50px;
+  color: #98a2b3;
+  font-size: 12px;
+}
+
+@media(max-width: 900px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+
+  <div class="logo">Paper<span>Pilot</span></div>
+  <div class="subtitle">AI Research Copilot</div>
+
+  <div class="nav-item active">✦ Ask AI</div>
+  <div class="nav-item">▣ Papers</div>
+  <div class="nav-item">⇄ Compare</div>
+  <div class="nav-item">▤ Reports</div>
+
+</div>
+
+<div class="main">
+
+  <div class="topbar">
+    <strong>Research Workspace</strong>
+    <div class="badge">V0.1 · MVP</div>
+  </div>
+
+  <h1>Turn papers into evidence.</h1>
+
+  <p class="hero-text">
+    PaperPilot helps researchers understand, compare and synthesize
+    scientific literature with evidence-first AI.
+  </p>
+
+  <div class="ask-box">
+    <input
+      id="question"
+      value="What are the major mechanisms associated with CAR-T cell exhaustion?"
+      placeholder="Ask a scientific research question..."
+    >
+    <button onclick="analyze()">Analyze</button>
+  </div>
+
+  <div id="result" class="result">
+
+    <h2>AI Research Insight</h2>
+
+    <p id="answer">
+      Persistent antigen stimulation, inhibitory receptor signaling,
+      metabolic dysfunction and transcriptional reprogramming are major
+      mechanisms associated with CAR-T cell exhaustion.
+    </p>
+
+    <span class="evidence-tag">
+      ✓ Evidence-based synthesis
+    </span>
+
+  </div>
+
+  <div class="section-title">
+    Evidence Cards
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-label">Evidence 01</div>
+      <h3>Persistent antigen stimulation</h3>
+      <p>
+        Continuous exposure to tumor-associated antigens can promote
+        progressive T-cell dysfunction and reduced antitumor activity.
+      </p>
+      <div class="source">Source · Example Paper A</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Evidence 02</div>
+      <h3>Inhibitory signaling</h3>
+      <p>
+        Increased expression of inhibitory receptors such as PD-1 may
+        contribute to dysfunctional CAR-T cell states.
+      </p>
+      <div class="source">Source · Example Paper B</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Evidence 03</div>
+      <h3>Metabolic dysfunction</h3>
+      <p>
+        Nutrient limitation and metabolic stress within the tumor
+        microenvironment can impair CAR-T cell persistence and function.
+      </p>
+      <div class="source">Source · Example Paper C</div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    PaperPilot · Evidence-first AI for scientific research
+  </div>
+
+</div>
+
+<script>
+function analyze() {
+
+  const question = document.getElementById("question").value;
+  const result = document.getElementById("result");
+
+  if(question.trim() === "") {
+    alert("Please enter a research question.");
+    return;
+  }
+
+  result.style.display = "block";
+
+  result.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
+}
+</script>
+
+</body>
+</html>
